@@ -1,0 +1,20 @@
+node_modules/
+__pycache__/
+*.pyc
+backend/model.pkl
+.env
+.env.*
+!backend/.env.example
+.venv/
+.review/
+backend/data/*.sqlite3*
+**/*.sqlite3*
+.pytest_cache/
+.ruff_cache/
+*.egg-info/
+EVIDENCIAS_WHATSAPP.md
+RESULTADOS_EVIDENCIAS_2026-10-14.md
+# Ayudantes operativos con telefonos reales del piloto; no son necesarios para ejecutar el backend.
+scripts/apply-support-alert.ps1
+scripts/enable-transaction-test.ps1
+
