@@ -1,25 +1,70 @@
-# Clasificador entrenado dentro del bot
+# Clasificador APF3 integrado al bot
 
-El backend procesa cada texto con un modelo TF-IDF de palabras (unigramas y bigramas) y regresión logística entrenado con las 180 frases etiquetadas de `backend/data/training_data.csv`. Predice una de seis clases: `consulta`, `pedido`, `reclamo`, `fuera_de_tema`, `ofensivo` y `spam`. OpenAI sigue redactando o proponiendo detalles de catálogo cuando corresponde; no sustituye al clasificador.
+El bot ejecuta un clasificador entrenado para `consulta`, `pedido`, `reclamo`,
+`fuera_de_tema`, `ofensivo` y `spam`. `backend/bot/intent_model.py` calcula la
+intención, confianza y margen dentro del flujo de mensajes. El servicio registra
+`intent_ml`, `confidence`, `margin` y `route_ml`; OpenAI puede redactar respuestas,
+pero su salida no reemplaza la predicción del clasificador.
 
-El entrenamiento está en `backend/train_apf3_classifier.py` y usa scikit-learn solo fuera del servidor. Exporta vocabulario, pesos e IDF a `backend/bot/model/intent_apf3.json`. `backend/bot/intent_model.py` ejecuta ese modelo dentro del servicio con la biblioteca estándar de Python. No se carga un pickle en producción.
+`pedido` conduce al catálogo/cotización; `consulta` a información; `reclamo`
+pausa el chat y lo deriva a una persona; las otras tres clases reciben una
+respuesta breve. Si la confianza es menor que 0,45, el margen menor que 0,15
+o no hay términos conocidos, el bot pide aclaración. Una afirmación como
+«ya pagué» o una imagen no acredita dinero: la recarga requiere verificación
+del comprobante y aprobación de la RPC correspondiente.
 
-El resultado reproducible está en `backend/bot/model/intent_apf3_report.json`: 144 ejemplos de entrenamiento y 36 reservados para evaluación. Acertó 26 de 36 (72,2 %); la validación cruzada de cuatro particiones **solo en entrenamiento** promedió 78,5 %. Durante el desarrollo se compararon configuraciones mirando una partición de prueba, por lo que el 72,2 % es descriptivo y podría ser optimista. Es un conjunto pequeño y manual; la cifra no demuestra precisión en clientes reales. La confianza tampoco está calibrada como probabilidad real de acierto.
+## Datos y comparación reproducible
 
-El bot exige confianza mínima de 0,45, margen mínimo de 0,15 entre las dos clases principales y al menos un término conocido. Si falla alguna condición, pide aclaración sin cotizar ni derivar automáticamente. Los umbrales se configuran en `BOT_INTENT_CONFIDENCE_THRESHOLD` y `BOT_INTENT_MARGIN_THRESHOLD`. El servicio registra `intent_ml`, `confidence`, `margin` y `route_ml` sin añadir el texto del mensaje a esas líneas de log; `/admin/status` informa si el modelo está cargado.
+El CSV público está en `backend/data/training_data.csv`. Su origen y conteo
+por clase están documentados en [DATASET_APF3.md](backend/data/DATASET_APF3.md).
+No hay trazabilidad que permita afirmar que sean mensajes reales de clientes.
 
-`pedido` conduce al catálogo o cotización; `consulta` conserva una respuesta informativa y evita que una sugerencia de OpenAI se transforme en compra; `reclamo` pausa el chat y lo deriva a una persona; las otras tres clases reciben una respuesta breve. Las confirmaciones explícitas y elecciones de una cotización en curso siguen sus reglas y estado. El modelo clasifica el texto, pero jamás confirma un pago: «ya pagué» solo solicita datos y captura; una imagen solo acredita saldo si `verify-whatsapp-receipt` y la RPC de recarga devuelven aprobación válida.
+`backend/train_apf3_classifier.py` fija primero una partición de 36 frases
+antiguas ya inspeccionadas, que se excluye de la selección y del modelo
+exportado. Divide las 144 restantes en 108 de entrenamiento y 36 de
+validación. Compara tres candidatos sobre **la misma validación** y elige por
+macro-F1, con accuracy y nombre como desempate:
 
-Para reentrenar en el equipo de desarrollo:
+| Modelo | Accuracy de validación | Macro-F1 de validación |
+|---|---:|---:|
+| Línea base: clase mayoritaria | 27,8 % | 0,072 |
+| TF-IDF unigramas + regresión logística | 83,3 % | **0,837** |
+| TF-IDF unigramas/bigramas + regresión logística | 72,2 % | 0,715 |
+
+La configuración elegida es TF-IDF de unigramas con normalización Unicode,
+`sublinear_tf=True`, más `LogisticRegression(C=4, class_weight="balanced",
+max_iter=2000)`. Tras seleccionarla, se ajustó con las 144 frases de
+desarrollo. Se evaluó una vez en `backend/data/apf3_final_test.csv`, un conjunto
+separado de **36 frases simuladas** (seis por clase): 25 aciertos, accuracy
+69,4 % y macro-F1 0,695. La matriz de confusión, las métricas por clase,
+hashes y configuración completa están en
+`backend/bot/model/intent_apf3_report.json`. El orden de filas y columnas
+figura en `selection.classes_order`.
+
+La antigua cifra de 72,2 % sobre la partición APF2 no es una evaluación final
+independiente: esa partición se consultó al comparar configuraciones. La nueva
+prueba es controlada, pequeña y simulada; tampoco representa a clientes reales.
+Las confianzas del modelo no están calibradas como probabilidades de acierto.
+
+El modelo elegido se exporta como JSON en
+`backend/bot/model/intent_apf3.json`; la VM no necesita scikit-learn ni carga
+un pickle. Para reproducir la comparación y exportación:
 
 ```powershell
 .\.venv\Scripts\python.exe -m pip install -r backend\requirements-training.txt
 $env:PYTHONPATH='backend'
 .\.venv\Scripts\python.exe backend\train_apf3_classifier.py
+.\.venv\Scripts\python.exe -m pytest backend\tests -q
 ```
 
-Para demostrarlo sin dinero real, iniciar el backend en modo demo y enviar «quiero netflix», «no puedo entrar a netflix», «venden ropa», «eres un inútil», «test» y una frase ambigua como «premium». Comparar las respuestas y los registros `intent_ml`/`route_ml`. La prueba automatizada `backend/tests/test_intent_model.py` comprueba además que el enrutamiento usa la clase incluso cuando el asistente propone otra acción.
+## Estado de la demostración por WhatsApp
 
-## Verificación en la VM, 12 de noviembre de 2026
-
-Después de instalar el paquete, `/health` respondió 200 y `/admin/status` mostró `intent_model_enabled=true` y las seis clases. El chat autorizado permaneció pausado. Se reintentó el mensaje antiguo que bloqueaba la cola; el trabajador marcó 526 entradas como procesadas y no quedaron entradas pendientes o fallidas ni se generaron nuevas salidas. La billetera consultada en Supabase siguió en S/ 7 y la última recarga aprobada continuó siendo la del 15 de octubre. Esto verifica arranque e integración técnica; la prueba de predicción y respuesta por WhatsApp con esta versión queda pendiente hasta que el dueño autorice reanudar el chat.
+La versión anterior del clasificador quedó instalada en la VM el 12 de
+noviembre de 2026: `/health` devolvió 200 y `/admin/status` informó las seis
+clases. El chat de prueba permaneció pausado. **El modelo seleccionado en este
+informe es una nueva exportación local y todavía no se ha desplegado en la VM.**
+Tampoco existe aún una captura de WhatsApp ni un log de esta versión que
+relacione intención, confianza y ruta. Para obtener esa evidencia hace falta
+que el dueño autorice reanudar el número de prueba, desplegar esta versión y
+hacer una conversación controlada. Hasta entonces, no debe afirmarse que esta
+versión se demostró por WhatsApp.

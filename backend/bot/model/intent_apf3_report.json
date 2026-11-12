@@ -1,119 +1,493 @@
 {
-  "dataset": "APF2 training_data.csv; etiquetas manuales, 180 ejemplos",
-  "dataset_sha256": "2219b6bed6ea9062c5741d8c07935eaa4a56e4f453198e75fc60bd6a60922e46",
-  "train_count": 144,
-  "holdout_count": 36,
-  "holdout_accuracy": 0.7222222222222222,
-  "cv_accuracy_mean_training_only": 0.7847222222222222,
-  "cv_accuracy_std_training_only": 0.09894310311649313,
-  "classes": [
-    "consulta",
-    "fuera_de_tema",
-    "ofensivo",
-    "pedido",
-    "reclamo",
-    "spam"
-  ],
-  "classification_report": {
-    "consulta": {
-      "precision": 0.8333333333333334,
-      "recall": 0.5,
-      "f1-score": 0.625,
-      "support": 10.0
+  "protocol": "v2: seleccion por validacion; prueba controlada despues de seleccionar",
+  "training_dataset": {
+    "path": "data\\training_data.csv",
+    "count": 180,
+    "sha256": "2219b6bed6ea9062c5741d8c07935eaa4a56e4f453198e75fc60bd6a60922e46",
+    "class_counts": {
+      "consulta": 49,
+      "pedido": 43,
+      "reclamo": 22,
+      "fuera_de_tema": 20,
+      "ofensivo": 20,
+      "spam": 26
     },
-    "fuera_de_tema": {
-      "precision": 0.5,
-      "recall": 0.5,
-      "f1-score": 0.5,
-      "support": 4.0
+    "origin": "Frases manuales; fuente primaria no documentada. No hay evidencia de conversaciones reales."
+  },
+  "selection": {
+    "train_count": 108,
+    "validation_count": 36,
+    "prior_holdout_count": 36,
+    "prior_holdout_status": "Inspeccionado antes; no se usa para seleccionar ni como prueba final.",
+    "split": "outer: stratified 20%, random_state=42; inner: stratified 25% de desarrollo, random_state=23",
+    "criterion": "max macro_f1, luego accuracy, luego nombre",
+    "classes_order": [
+      "consulta",
+      "fuera_de_tema",
+      "ofensivo",
+      "pedido",
+      "reclamo",
+      "spam"
+    ],
+    "candidates": {
+      "baseline_most_frequent": {
+        "accuracy": 0.2777777777777778,
+        "macro_f1": 0.07246376811594203,
+        "classification_report": {
+          "consulta": {
+            "precision": 0.2777777777777778,
+            "recall": 1.0,
+            "f1-score": 0.43478260869565216,
+            "support": 10.0
+          },
+          "fuera_de_tema": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "ofensivo": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 4.0
+          },
+          "pedido": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 8.0
+          },
+          "reclamo": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 5.0
+          },
+          "spam": {
+            "precision": 0.0,
+            "recall": 0.0,
+            "f1-score": 0.0,
+            "support": 5.0
+          },
+          "accuracy": 0.2777777777777778,
+          "macro avg": {
+            "precision": 0.0462962962962963,
+            "recall": 0.16666666666666666,
+            "f1-score": 0.07246376811594203,
+            "support": 36.0
+          },
+          "weighted avg": {
+            "precision": 0.07716049382716049,
+            "recall": 0.2777777777777778,
+            "f1-score": 0.12077294685990338,
+            "support": 36.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            10,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            4,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            4,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            8,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            5,
+            0,
+            0,
+            0,
+            0,
+            0
+          ],
+          [
+            5,
+            0,
+            0,
+            0,
+            0,
+            0
+          ]
+        ]
+      },
+      "logreg_unigrams_c4": {
+        "accuracy": 0.8333333333333334,
+        "macro_f1": 0.8373617123617124,
+        "classification_report": {
+          "consulta": {
+            "precision": 0.7272727272727273,
+            "recall": 0.8,
+            "f1-score": 0.7619047619047619,
+            "support": 10.0
+          },
+          "fuera_de_tema": {
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1-score": 0.8571428571428571,
+            "support": 4.0
+          },
+          "ofensivo": {
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1-score": 0.8571428571428571,
+            "support": 4.0
+          },
+          "pedido": {
+            "precision": 0.8,
+            "recall": 1.0,
+            "f1-score": 0.8888888888888888,
+            "support": 8.0
+          },
+          "reclamo": {
+            "precision": 1.0,
+            "recall": 0.6,
+            "f1-score": 0.75,
+            "support": 5.0
+          },
+          "spam": {
+            "precision": 0.8333333333333334,
+            "recall": 1.0,
+            "f1-score": 0.9090909090909091,
+            "support": 5.0
+          },
+          "accuracy": 0.8333333333333334,
+          "macro avg": {
+            "precision": 0.8934343434343434,
+            "recall": 0.8166666666666668,
+            "f1-score": 0.8373617123617124,
+            "support": 36.0
+          },
+          "weighted avg": {
+            "precision": 0.8566498316498317,
+            "recall": 0.8333333333333334,
+            "f1-score": 0.830076559243226,
+            "support": 36.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            8,
+            0,
+            0,
+            1,
+            0,
+            1
+          ],
+          [
+            0,
+            3,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            3,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            8,
+            0,
+            0
+          ],
+          [
+            2,
+            0,
+            0,
+            0,
+            3,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            5
+          ]
+        ]
+      },
+      "logreg_unigrams_bigrams_c4": {
+        "accuracy": 0.7222222222222222,
+        "macro_f1": 0.7146358543417367,
+        "classification_report": {
+          "consulta": {
+            "precision": 0.6363636363636364,
+            "recall": 0.7,
+            "f1-score": 0.6666666666666666,
+            "support": 10.0
+          },
+          "fuera_de_tema": {
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1-score": 0.8571428571428571,
+            "support": 4.0
+          },
+          "ofensivo": {
+            "precision": 1.0,
+            "recall": 0.75,
+            "f1-score": 0.8571428571428571,
+            "support": 4.0
+          },
+          "pedido": {
+            "precision": 0.7777777777777778,
+            "recall": 0.875,
+            "f1-score": 0.8235294117647058,
+            "support": 8.0
+          },
+          "reclamo": {
+            "precision": 0.3333333333333333,
+            "recall": 0.2,
+            "f1-score": 0.25,
+            "support": 5.0
+          },
+          "spam": {
+            "precision": 0.7142857142857143,
+            "recall": 1.0,
+            "f1-score": 0.8333333333333334,
+            "support": 5.0
+          },
+          "accuracy": 0.7222222222222222,
+          "macro avg": {
+            "precision": 0.7436267436267436,
+            "recall": 0.7125,
+            "f1-score": 0.7146358543417367,
+            "support": 36.0
+          },
+          "weighted avg": {
+            "precision": 0.7173320506653841,
+            "recall": 0.7222222222222222,
+            "f1-score": 0.709130874572051,
+            "support": 36.0
+          }
+        },
+        "confusion_matrix": [
+          [
+            7,
+            0,
+            0,
+            1,
+            1,
+            1
+          ],
+          [
+            0,
+            3,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            3,
+            0,
+            0,
+            0
+          ],
+          [
+            0,
+            0,
+            0,
+            7,
+            1,
+            0
+          ],
+          [
+            3,
+            0,
+            0,
+            0,
+            1,
+            1
+          ],
+          [
+            0,
+            0,
+            0,
+            0,
+            0,
+            5
+          ]
+        ]
+      }
     },
-    "ofensivo": {
-      "precision": 0.6,
-      "recall": 0.75,
-      "f1-score": 0.6666666666666666,
-      "support": 4.0
+    "selected": "logreg_unigrams_c4"
+  },
+  "final_test": {
+    "path": "data\\apf3_final_test.csv",
+    "count": 36,
+    "sha256": "cc7fd0a6d9cb204b4154c827150afbde8da4fe4a354cc64150cdababeffe9e66",
+    "class_counts": {
+      "consulta": 6,
+      "pedido": 6,
+      "reclamo": 6,
+      "fuera_de_tema": 6,
+      "ofensivo": 6,
+      "spam": 6
     },
-    "pedido": {
-      "precision": 0.6923076923076923,
-      "recall": 1.0,
-      "f1-score": 0.8181818181818182,
-      "support": 9.0
-    },
-    "reclamo": {
-      "precision": 1.0,
-      "recall": 0.75,
-      "f1-score": 0.8571428571428571,
-      "support": 4.0
-    },
-    "spam": {
-      "precision": 0.8,
-      "recall": 0.8,
-      "f1-score": 0.8,
-      "support": 5.0
-    },
-    "accuracy": 0.7222222222222222,
-    "macro avg": {
-      "precision": 0.7376068376068377,
-      "recall": 0.7166666666666667,
-      "f1-score": 0.7111652236652236,
-      "support": 36.0
-    },
-    "weighted avg": {
-      "precision": 0.749002849002849,
-      "recall": 0.7222222222222222,
-      "f1-score": 0.7141354016354016,
-      "support": 36.0
+    "origin": "Frases de prueba controladas redactadas para APF3; no conversaciones reales.",
+    "metrics": {
+      "accuracy": 0.6944444444444444,
+      "macro_f1": 0.6946909571909572,
+      "classification_report": {
+        "consulta": {
+          "precision": 0.8,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.7272727272727273,
+          "support": 6.0
+        },
+        "fuera_de_tema": {
+          "precision": 0.6666666666666666,
+          "recall": 0.3333333333333333,
+          "f1-score": 0.4444444444444444,
+          "support": 6.0
+        },
+        "ofensivo": {
+          "precision": 0.5,
+          "recall": 0.8333333333333334,
+          "f1-score": 0.625,
+          "support": 6.0
+        },
+        "pedido": {
+          "precision": 0.5,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.5714285714285714,
+          "support": 6.0
+        },
+        "reclamo": {
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.8,
+          "support": 6.0
+        },
+        "spam": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1-score": 1.0,
+          "support": 6.0
+        },
+        "accuracy": 0.6944444444444444,
+        "macro avg": {
+          "precision": 0.7444444444444445,
+          "recall": 0.6944444444444443,
+          "f1-score": 0.6946909571909572,
+          "support": 36.0
+        },
+        "weighted avg": {
+          "precision": 0.7444444444444445,
+          "recall": 0.6944444444444444,
+          "f1-score": 0.6946909571909572,
+          "support": 36.0
+        }
+      },
+      "confusion_matrix": [
+        [
+          4,
+          0,
+          1,
+          1,
+          0,
+          0
+        ],
+        [
+          0,
+          2,
+          1,
+          3,
+          0,
+          0
+        ],
+        [
+          0,
+          1,
+          5,
+          0,
+          0,
+          0
+        ],
+        [
+          1,
+          0,
+          1,
+          4,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          0,
+          4,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          0,
+          6
+        ]
+      ]
     }
   },
-  "confusion_matrix": [
-    [
-      5,
-      2,
-      1,
-      2,
-      0,
-      0
-    ],
-    [
-      0,
-      2,
-      0,
-      2,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      3,
-      0,
-      0,
-      1
-    ],
-    [
-      0,
-      0,
-      0,
-      9,
-      0,
-      0
-    ],
-    [
-      0,
-      0,
-      1,
-      0,
-      3,
-      0
-    ],
-    [
-      1,
-      0,
-      0,
-      0,
-      0,
-      4
-    ]
-  ],
-  "limitations": "Conjunto pequeno y manual; las probabilidades no estan calibradas. Se compararon configuraciones durante el desarrollo con una particion de prueba, por lo que el 72.2% es descriptivo y puede ser optimista. El umbral y margen de confianza obligan a pedir aclaracion ante dudas."
+  "export": {
+    "path": "bot\\model\\intent_apf3.json",
+    "format": "dadtv-apf3-tfidf-logreg-v1",
+    "fit_count": 144,
+    "configuration": {
+      "vectorizer": {
+        "ngram_range": [
+          1,
+          1
+        ],
+        "strip_accents": "unicode",
+        "sublinear_tf": true,
+        "token_pattern": "(?u)\\b\\w\\w+\\b"
+      },
+      "classifier": {
+        "type": "LogisticRegression",
+        "C": 4,
+        "class_weight": "balanced",
+        "max_iter": 2000
+      }
+    }
+  },
+  "limitations": "La prueba final es simulada y pequena; no estima rendimiento en clientes reales. La particion antigua fue inspeccionada previamente y no es independiente. Las confianzas no estan calibradas como probabilidades de acierto."
 }
