@@ -1,0 +1,119 @@
+{
+  "dataset": "APF2 training_data.csv; etiquetas manuales, 180 ejemplos",
+  "dataset_sha256": "2219b6bed6ea9062c5741d8c07935eaa4a56e4f453198e75fc60bd6a60922e46",
+  "train_count": 144,
+  "holdout_count": 36,
+  "holdout_accuracy": 0.7222222222222222,
+  "cv_accuracy_mean_training_only": 0.7847222222222222,
+  "cv_accuracy_std_training_only": 0.09894310311649313,
+  "classes": [
+    "consulta",
+    "fuera_de_tema",
+    "ofensivo",
+    "pedido",
+    "reclamo",
+    "spam"
+  ],
+  "classification_report": {
+    "consulta": {
+      "precision": 0.8333333333333334,
+      "recall": 0.5,
+      "f1-score": 0.625,
+      "support": 10.0
+    },
+    "fuera_de_tema": {
+      "precision": 0.5,
+      "recall": 0.5,
+      "f1-score": 0.5,
+      "support": 4.0
+    },
+    "ofensivo": {
+      "precision": 0.6,
+      "recall": 0.75,
+      "f1-score": 0.6666666666666666,
+      "support": 4.0
+    },
+    "pedido": {
+      "precision": 0.6923076923076923,
+      "recall": 1.0,
+      "f1-score": 0.8181818181818182,
+      "support": 9.0
+    },
+    "reclamo": {
+      "precision": 1.0,
+      "recall": 0.75,
+      "f1-score": 0.8571428571428571,
+      "support": 4.0
+    },
+    "spam": {
+      "precision": 0.8,
+      "recall": 0.8,
+      "f1-score": 0.8,
+      "support": 5.0
+    },
+    "accuracy": 0.7222222222222222,
+    "macro avg": {
+      "precision": 0.7376068376068377,
+      "recall": 0.7166666666666667,
+      "f1-score": 0.7111652236652236,
+      "support": 36.0
+    },
+    "weighted avg": {
+      "precision": 0.749002849002849,
+      "recall": 0.7222222222222222,
+      "f1-score": 0.7141354016354016,
+      "support": 36.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      5,
+      2,
+      1,
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      2,
+      0,
+      2,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      3,
+      0,
+      0,
+      1
+    ],
+    [
+      0,
+      0,
+      0,
+      9,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0,
+      3,
+      0
+    ],
+    [
+      1,
+      0,
+      0,
+      0,
+      0,
+      4
+    ]
+  ],
+  "limitations": "Conjunto pequeno y manual; las probabilidades no estan calibradas. Se compararon configuraciones durante el desarrollo con una particion de prueba, por lo que el 72.2% es descriptivo y puede ser optimista. El umbral y margen de confianza obligan a pedir aclaracion ante dudas."
+}

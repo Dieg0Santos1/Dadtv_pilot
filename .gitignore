@@ -17,4 +17,3 @@ RESULTADOS_EVIDENCIAS_2026-10-14.md
 # Ayudantes operativos con telefonos reales del piloto; no son necesarios para ejecutar el backend.
 scripts/apply-support-alert.ps1
 scripts/enable-transaction-test.ps1
-

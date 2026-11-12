@@ -1,0 +1,4 @@
+# Solo para reentrenar el clasificador anterior; el nuevo runtime no lo importa.
+scikit-learn
+joblib
+pandas

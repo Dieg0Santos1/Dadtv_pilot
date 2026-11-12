@@ -1,0 +1,78 @@
+services:
+  - type: web
+    name: dadtvplay-backend
+    runtime: python
+    rootDir: backend
+    # Blueprint preparado, no desplegado. Revisar costo de instancia y disco antes de usar.
+    plan: starter
+    numInstances: 1
+    buildCommand: pip install -r requirements.lock
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT --workers 1 --no-access-log
+    healthCheckPath: /health
+    disk:
+      name: bot-queue
+      mountPath: /var/data
+      sizeGB: 1
+    envVars:
+      - key: PYTHON_VERSION
+        value: "3.12.13"
+      - key: BOT_MODE
+        value: "demo"
+      - key: BOT_ENGINE
+        value: "openai"
+      - key: BOT_PROVIDER
+        value: "wasender"
+      - key: BOT_DATABASE_PATH
+        value: "/var/data/bot.sqlite3"
+      - key: BOT_SEND_ENABLED
+        value: "false"
+      - key: BOT_COMMERCE_ENABLED
+        value: "false"
+      - key: BOT_RENEWAL_ENABLED
+        value: "false"
+      - key: BOT_TEST_CONTACTS_ONLY
+        value: "true"
+      - key: BOT_ALLOWED_PHONES
+        sync: false
+      - key: RECHARGE_YAPE_PHONE
+        sync: false
+      - key: RECHARGE_RECEIVER
+        sync: false
+      - key: RECHARGE_MIN_AMOUNT
+        value: "20"
+      - key: RECHARGE_WINDOW_MINUTES
+        value: "10"
+      - key: BOT_WHATSAPP_RECHARGE_ENABLED
+        value: "false"
+      - key: ADMIN_API_TOKEN
+        sync: false
+      - key: TENANT_ID
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: OPENAI_BOT_MODEL
+        value: "gpt-5.4-mini-2026-03-17"
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: WAMUNDO_SECRET
+        sync: false
+      - key: WAMUNDO_ACCOUNT_ID
+        sync: false
+      - key: WAMUNDO_HOOK_TOKEN
+        sync: false
+      - key: WAMUNDO_WEBHOOK_SECRET
+        sync: false
+      - key: WAMUNDO_ACCOUNT_WID
+        sync: false
+      - key: WASENDER_API_TOKEN
+        sync: false
+      - key: WASENDER_WEBHOOK_SECRET
+        sync: false
+      - key: WASENDER_ACCOUNT_PHONE
+        sync: false
+      - key: POLL_INTERVAL_SECONDS
+        value: "30"
+      - key: DEBOUNCE_SECONDS
+        value: "3"

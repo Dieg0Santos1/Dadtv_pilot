@@ -1,0 +1,2 @@
+# Solo para regenerar el modelo APF3; no se instala en el servicio de la VM.
+scikit-learn==1.9.1
