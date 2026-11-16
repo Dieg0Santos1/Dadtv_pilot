@@ -29,21 +29,24 @@ macro-F1, con accuracy y nombre como desempate:
 |---|---:|---:|
 | Línea base: clase mayoritaria | 27,8 % | 0,072 |
 | TF-IDF unigramas + regresión logística | 83,3 % | **0,837** |
-| TF-IDF unigramas/bigramas + regresión logística | 72,2 % | 0,715 |
+| TF-IDF unigramas + SVM lineal | 80,6 % | 0,807 |
 
 La configuración elegida es TF-IDF de unigramas con normalización Unicode,
 `sublinear_tf=True`, más `LogisticRegression(C=4, class_weight="balanced",
 max_iter=2000)`. Tras seleccionarla, se ajustó con las 144 frases de
-desarrollo. Se evaluó una vez en `backend/data/apf3_final_test.csv`, un conjunto
-separado de **36 frases simuladas** (seis por clase): 25 aciertos, accuracy
-69,4 % y macro-F1 0,695. La matriz de confusión, las métricas por clase,
+desarrollo. El conjunto `backend/data/apf3_final_test.csv`, con **36 frases
+simuladas** (seis por clase), ya se había evaluado antes de agregar SVM a la
+comparación: 25 aciertos, accuracy 69,4 % y macro-F1 0,695. Es una cifra
+descriptiva reutilizada, **no una prueba final independiente nueva**.
+Las matrices de confusión de los tres modelos sobre la misma validación y las métricas por clase,
 hashes y configuración completa están en
 `backend/bot/model/intent_apf3_report.json`. El orden de filas y columnas
-figura en `selection.classes_order`.
+figura en `selection.classes_order`. Las matrices también se presentan en
+[APF3_COMPARACION_MODELOS.md](APF3_COMPARACION_MODELOS.md).
 
 La antigua cifra de 72,2 % sobre la partición APF2 no es una evaluación final
-independiente: esa partición se consultó al comparar configuraciones. La nueva
-prueba es controlada, pequeña y simulada; tampoco representa a clientes reales.
+independiente: esa partición se consultó al comparar configuraciones. La prueba
+controlada adicional es pequeña, simulada y ya inspeccionada; tampoco representa a clientes reales.
 Las confianzas del modelo no están calibradas como probabilidades de acierto.
 
 El modelo elegido se exporta como JSON en

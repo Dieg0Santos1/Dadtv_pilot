@@ -17,6 +17,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, classification_report, confusion_matrix, f1_score
 from sklearn.model_selection import train_test_split
 from sklearn.pipeline import make_pipeline
+from sklearn.svm import LinearSVC
 
 ROOT = Path(__file__).resolve().parent
 DATA = ROOT / "data" / "training_data.csv"
@@ -43,7 +44,7 @@ def candidates():
     return {
         "baseline_most_frequent": make_pipeline(vectorizer((1, 1)), DummyClassifier(strategy="most_frequent")),
         "logreg_unigrams_c4": make_pipeline(vectorizer((1, 1)), LogisticRegression(max_iter=2000, C=4, class_weight="balanced")),
-        "logreg_unigrams_bigrams_c4": make_pipeline(vectorizer((1, 2)), LogisticRegression(max_iter=2000, C=4, class_weight="balanced")),
+        "linear_svm_unigrams_c1": make_pipeline(vectorizer((1, 1)), LinearSVC(C=1, class_weight="balanced", max_iter=5000, random_state=42)),
     }
 
 
@@ -73,8 +74,8 @@ def main():
         model.fit(x_train, y_train)
         validation[name] = metrics(y_val, model.predict(x_val))
     selected = max(validation, key=lambda name: (validation[name]["macro_f1"], validation[name]["accuracy"], name))
-    if selected == "baseline_most_frequent":
-        raise RuntimeError("El modelo base no puede exportarse al runtime logistico")
+    if not selected.startswith("logreg_"):
+        raise RuntimeError("El ganador no es compatible con el runtime logistico; implementar su inferencia antes de exportar")
 
     # The final-test CSV is read above for integrity checks, but is scored
     # only here, after the fixed selection rule has chosen a model.
@@ -100,7 +101,7 @@ def main():
             raise RuntimeError("La inferencia JSON no coincide con scikit-learn")
 
     report = {
-        "protocol": "v2: seleccion por validacion; prueba controlada despues de seleccionar",
+        "protocol": "v3: baseline, regresion logistica y SVM lineal en la misma validacion; prueba controlada reutilizada descriptivamente",
         "training_dataset": {"path": str(DATA.relative_to(ROOT)), "count": len(texts),
                              "sha256": artifact["dataset_sha256"], "class_counts": dict(Counter(labels)),
                              "origin": "Frases manuales; fuente primaria no documentada. No hay evidencia de conversaciones reales."},
@@ -114,6 +115,7 @@ def main():
                        "sha256": hashlib.sha256(FINAL_TEST.read_bytes()).hexdigest(),
                        "class_counts": dict(Counter(final_labels)),
                        "origin": "Frases de prueba controladas redactadas para APF3; no conversaciones reales.",
+                       "independence_status": "Ya inspeccionado antes de agregar SVM; resultado descriptivo, no nueva prueba independiente.",
                        "metrics": final_result},
         "export": {"path": str(MODEL.relative_to(ROOT)), "format": artifact["format"],
                    "fit_count": len(development_idx), "configuration": {
@@ -121,8 +123,8 @@ def main():
                                       "sublinear_tf": True, "token_pattern": vectorizer.token_pattern},
                        "classifier": {"type": "LogisticRegression", "C": classifier.C,
                                       "class_weight": "balanced", "max_iter": classifier.max_iter}}},
-        "limitations": "La prueba final es simulada y pequena; no estima rendimiento en clientes reales. "
-                       "La particion antigua fue inspeccionada previamente y no es independiente. "
+        "limitations": "La prueba controlada es simulada, pequena y ya fue consultada antes de esta comparacion con SVM; su resultado es descriptivo, no una evaluacion independiente nueva. "
+                       "La particion antigua fue inspeccionada previamente y tampoco es independiente. "
                        "Las confianzas no estan calibradas como probabilidades de acierto.",
     }
     MODEL.parent.mkdir(parents=True, exist_ok=True)

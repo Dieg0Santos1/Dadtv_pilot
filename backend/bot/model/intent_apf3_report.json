@@ -1,5 +1,5 @@
 {
-  "protocol": "v2: seleccion por validacion; prueba controlada despues de seleccionar",
+  "protocol": "v3: baseline, regresion logistica y SVM lineal en la misma validacion; prueba controlada reutilizada descriptivamente",
   "training_dataset": {
     "path": "data\\training_data.csv",
     "count": 180,
@@ -240,14 +240,14 @@
           ]
         ]
       },
-      "logreg_unigrams_bigrams_c4": {
-        "accuracy": 0.7222222222222222,
-        "macro_f1": 0.7146358543417367,
+      "linear_svm_unigrams_c1": {
+        "accuracy": 0.8055555555555556,
+        "macro_f1": 0.8065476190476191,
         "classification_report": {
           "consulta": {
-            "precision": 0.6363636363636364,
-            "recall": 0.7,
-            "f1-score": 0.6666666666666666,
+            "precision": 0.6428571428571429,
+            "recall": 0.9,
+            "f1-score": 0.75,
             "support": 10.0
           },
           "fuera_de_tema": {
@@ -263,68 +263,68 @@
             "support": 4.0
           },
           "pedido": {
-            "precision": 0.7777777777777778,
+            "precision": 0.875,
             "recall": 0.875,
-            "f1-score": 0.8235294117647058,
+            "f1-score": 0.875,
             "support": 8.0
           },
           "reclamo": {
-            "precision": 0.3333333333333333,
-            "recall": 0.2,
-            "f1-score": 0.25,
+            "precision": 0.6666666666666666,
+            "recall": 0.4,
+            "f1-score": 0.5,
             "support": 5.0
           },
           "spam": {
-            "precision": 0.7142857142857143,
+            "precision": 1.0,
             "recall": 1.0,
-            "f1-score": 0.8333333333333334,
+            "f1-score": 1.0,
             "support": 5.0
           },
-          "accuracy": 0.7222222222222222,
+          "accuracy": 0.8055555555555556,
           "macro avg": {
-            "precision": 0.7436267436267436,
-            "recall": 0.7125,
-            "f1-score": 0.7146358543417367,
+            "precision": 0.8640873015873015,
+            "recall": 0.7791666666666667,
+            "f1-score": 0.8065476190476191,
             "support": 36.0
           },
           "weighted avg": {
-            "precision": 0.7173320506653841,
-            "recall": 0.7222222222222222,
-            "f1-score": 0.709130874572051,
+            "precision": 0.8267195767195767,
+            "recall": 0.8055555555555556,
+            "f1-score": 0.8015873015873016,
             "support": 36.0
           }
         },
         "confusion_matrix": [
           [
+            9,
+            0,
+            0,
+            0,
+            1,
+            0
+          ],
+          [
+            0,
+            3,
+            0,
+            1,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            3,
+            0,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0,
             7,
             0,
-            0,
-            1,
-            1,
-            1
-          ],
-          [
-            0,
-            3,
-            0,
-            1,
-            0,
-            0
-          ],
-          [
-            1,
-            0,
-            3,
-            0,
-            0,
-            0
-          ],
-          [
-            0,
-            0,
-            0,
-            7,
-            1,
             0
           ],
           [
@@ -332,8 +332,8 @@
             0,
             0,
             0,
-            1,
-            1
+            2,
+            0
           ],
           [
             0,
@@ -361,6 +361,7 @@
       "spam": 6
     },
     "origin": "Frases de prueba controladas redactadas para APF3; no conversaciones reales.",
+    "independence_status": "Ya inspeccionado antes de agregar SVM; resultado descriptivo, no nueva prueba independiente.",
     "metrics": {
       "accuracy": 0.6944444444444444,
       "macro_f1": 0.6946909571909572,
@@ -489,5 +490,5 @@
       }
     }
   },
-  "limitations": "La prueba final es simulada y pequena; no estima rendimiento en clientes reales. La particion antigua fue inspeccionada previamente y no es independiente. Las confianzas no estan calibradas como probabilidades de acierto."
+  "limitations": "La prueba controlada es simulada, pequena y ya fue consultada antes de esta comparacion con SVM; su resultado es descriptivo, no una evaluacion independiente nueva. La particion antigua fue inspeccionada previamente y tampoco es independiente. Las confianzas no estan calibradas como probabilidades de acierto."
 }

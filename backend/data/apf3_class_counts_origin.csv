@@ -1,0 +1,7 @@
+label,count,primary_source,real_conversation_provenance
+consulta,49,not_documented,unverified
+pedido,43,not_documented,unverified
+reclamo,22,not_documented,unverified
+fuera_de_tema,20,not_documented,unverified
+ofensivo,20,not_documented,unverified
+spam,26,not_documented,unverified

@@ -20,12 +20,17 @@ proporción de reales y simulados.
 | `spam` | 26 | 6 |
 | **Total** | **180** | **36** |
 
-`apf3_final_test.csv` contiene 36 frases nuevas redactadas como prueba
-controlada para APF3. No son mensajes de usuarios. Se fijó el script, sus
-candidatos, la regla de selección y el tamaño de entrenamiento antes de
-evaluar esta versión de la prueba. La partición antigua de 36 frases del
-entrenamiento ya se había inspeccionado durante APF2: está excluida de la
-selección y del modelo exportado, y no se presenta como evaluación final.
+El mismo conteo y estado de procedencia está disponible en
+`apf3_class_counts_origin.csv` para importarlo al informe. `not_documented`
+significa que no se conservó la fuente primaria; `unverified` significa
+que no es posible afirmar que la frase venga de una conversación real.
+
+`apf3_final_test.csv` contiene 36 frases redactadas como prueba controlada
+para APF3. No son mensajes de usuarios. Se evaluó antes de agregar SVM a la
+comparación, por lo que su resultado se reutiliza solo como descripción y
+no como una evaluación independiente nueva. La partición antigua de 36
+frases del entrenamiento ya se había inspeccionado durante APF2: está
+excluida de la selección y del modelo exportado.
 
 La prueba controlada nueva aporta una medición interna reproducible. Sigue
 siendo pequeña, simulada y redactada por el equipo; para medir el rendimiento
