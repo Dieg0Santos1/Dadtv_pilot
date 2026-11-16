@@ -63,7 +63,16 @@ try {
     if ($phones[0] -notin @($pausedAfter | ForEach-Object { $_.phone })) {
         throw 'El contacto de prueba ya no esta pausado.'
     }
-    if (-not (Test-Path -LiteralPath $stderr)) { throw 'NSSM no creo el archivo AppStderr.' }
+    $loggingReady = $false
+    for ($attempt = 0; $attempt -lt 10; $attempt++) {
+        if ((Test-Path -LiteralPath $stderr) -and
+            (Get-Content -LiteralPath $stderr -Tail 25 | Select-String -SimpleMatch 'Bot iniciado')) {
+            $loggingReady = $true
+            break
+        }
+        Start-Sleep -Seconds 1
+    }
+    if (-not $loggingReady) { throw 'NSSM no registro el inicio del bot en AppStderr.' }
     Write-Host 'Registro APF3 activo; /health OK; seis clases; chat pausado.'
     Write-Host "Log: $stderr"
     Write-Host "Respaldo: $backup"
