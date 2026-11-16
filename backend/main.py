@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from uuid import uuid4
@@ -18,6 +19,21 @@ from bot.wasender import WaSender
 from bot.wasender import incoming_webhook as incoming_wasender_webhook
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
+
+# Uvicorn configura sus propios loggers, pero no emite INFO de dadtv.bot por
+# defecto. Mantener un handler propio hace visibles intención, confianza y
+# ruta en la salida de error capturada por el servicio Windows.
+bot_logger = logging.getLogger("dadtv.bot")
+bot_logger.setLevel(logging.INFO)
+if not bot_logger.handlers:
+    bot_handler = logging.StreamHandler()
+    bot_formatter = logging.Formatter(
+        "%(asctime)sZ %(levelname)s %(name)s %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S",
+    )
+    bot_formatter.converter = time.gmtime
+    bot_handler.setFormatter(bot_formatter)
+    bot_logger.addHandler(bot_handler)
 
 
 def build_service(settings):
