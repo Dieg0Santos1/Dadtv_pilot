@@ -59,12 +59,11 @@ $env:PYTHONPATH='backend'
 
 ## Estado de la demostración por WhatsApp
 
-La versión anterior del clasificador quedó instalada en la VM el 12 de
-noviembre de 2026: `/health` devolvió 200 y `/admin/status` informó las seis
-clases. El chat de prueba permaneció pausado. **El modelo seleccionado en este
-informe es una nueva exportación local y todavía no se ha desplegado en la VM.**
-Tampoco existe aún una captura de WhatsApp ni un log de esta versión que
-relacione intención, confianza y ruta. Para obtener esa evidencia hace falta
-que el dueño autorice reanudar el número de prueba, desplegar esta versión y
-hacer una conversación controlada. Hasta entonces, no debe afirmarse que esta
-versión se demostró por WhatsApp.
+El modelo seleccionado se instaló en la VM el 16 de noviembre de 2026. El
+instalador verificó SHA256, `/health`, las seis clases y que el chat de prueba
+seguía pausado. Después, con autorización del dueño, se reanudó únicamente
+ese contacto y se hizo una prueba controlada. La conversación y las líneas
+reales de `intent_ml`/`route_ml` se analizan en
+[APF3_PRUEBA_WHATSAPP_2026-11-16.md](APF3_PRUEBA_WHATSAPP_2026-11-16.md).
+Las capturas aportadas muestran datos de perfil y aún requieren ocultarlos
+antes de anexarse al informe o publicarse.
