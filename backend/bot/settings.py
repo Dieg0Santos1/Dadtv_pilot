@@ -127,7 +127,7 @@ class Settings:
         if self.provider not in {"wamundo", "wasender"}:
             raise ValueError("BOT_PROVIDER: wamundo/wasender")
         if self.mode == "demo" and (self.send_enabled or self.commerce_enabled):
-            raise ValueError("El modo demo no permite envíos ni compras reales")
+            raise ValueError("El modo demo no permite env�os ni compras reales")
         if self.mode == "live" and not all((self.supabase_url, self.supabase_key, self.tenant_id)):
             raise ValueError("Faltan SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY o TENANT_ID")
         if self.engine == "openai" and not all((self.openai_key, self.openai_model)):
@@ -149,11 +149,11 @@ class Settings:
         if self.send_enabled and self.provider == "wasender" and not self.wasender_token:
             raise ValueError("Falta WASENDER_API_TOKEN")
         if self.commerce_enabled and not self.send_enabled:
-            raise ValueError("Las compras reales requieren el canal de envío activo")
+            raise ValueError("Las compras reales requieren el canal de env�o activo")
         if self.renewal_enabled and not self.commerce_enabled:
             raise ValueError("Las renovaciones reales requieren BOT_COMMERCE_ENABLED=true")
         if self.send_enabled and self.test_contacts_only and not self.allowed_phones:
-            raise ValueError("Configura BOT_ALLOWED_PHONES antes de activar envíos en pruebas")
+            raise ValueError("Configura BOT_ALLOWED_PHONES antes de activar env�os en pruebas")
         if self.support_alert_phone:
             phone_number(self.support_alert_phone)
             if self.test_contacts_only and self.support_alert_phone not in self.allowed_phones:
@@ -161,13 +161,13 @@ class Settings:
         if self.max_attempts < 1 or self.quote_ttl_seconds < 1:
             raise ValueError("Intentos y vigencia deben ser positivos")
         if self.recharge_min_amount < 1 or self.recharge_window_minutes < 1:
-            raise ValueError("Límites de recarga inválidos")
+            raise ValueError("L�mites de recarga inv�lidos")
         if self.recharge_yape_phone and not self.recharge_yape_phone.isdigit():
-            raise ValueError("RECHARGE_YAPE_PHONE debe contener solo dígitos")
-        if self.whatsapp_recharge_enabled and (self.mode != "live" or self.provider != "wasender" or not self.test_contacts_only):
-            raise ValueError("La recarga por WhatsApp requiere WaSender en modo live y contactos de prueba")
+            raise ValueError("RECHARGE_YAPE_PHONE debe contener solo d�gitos")
+        if self.whatsapp_recharge_enabled and (self.mode != "live" or self.provider != "wasender"):
+            raise ValueError("La recarga por WhatsApp requiere WaSender en modo live")
         if self.whatsapp_recharge_enabled and not legacy_service_role_key(self.supabase_key):
             raise ValueError("SUPABASE_SERVICE_ROLE_KEY debe ser la clave legacy service_role, no la anon")
         if self.debounce_seconds < 0 or self.poll_seconds < 0 or self.max_message_age < 1:
-            raise ValueError("Intervalos inválidos")
+            raise ValueError("Intervalos inv�lidos")
         Path(self.database_path).parent.mkdir(parents=True, exist_ok=True)

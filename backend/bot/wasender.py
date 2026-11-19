@@ -19,13 +19,13 @@ def incoming_webhook(payload, signature, settings, on_ignored=None):
         return ignored("other_event")
     data = payload.get("data")
     if not isinstance(data, dict):
-        raise BusinessError("Payload inválido")
+        raise BusinessError("Payload inv�lido")
     message = data.get("messages")
     if not isinstance(message, dict):
-        raise BusinessError("Payload inválido")
+        raise BusinessError("Payload inv�lido")
     key = message.get("key")
     if not isinstance(key, dict):
-        raise BusinessError("Payload inválido")
+        raise BusinessError("Payload inv�lido")
     if key.get("fromMe") is not False:
         return ignored("outgoing_or_missing_origin")
     jid = key.get("remoteJid")
@@ -64,6 +64,57 @@ def incoming_webhook(payload, signature, settings, on_ignored=None):
     if not key.get("id") or not result:
         return ignored("missing_id_or_content")
     return result
+
+
+def outgoing_control(payload, signature, settings):
+    """Read an explicit command sent from the owner's WhatsApp session.
+
+    Only ``message.sent`` from the authenticated session can pause or resume
+    a private chat. Ordinary outgoing messages, including bot replies, are
+    ignored. The command is visible in the chat so the owner can audit it.
+    """
+    if not valid_secret(signature, settings.wasender_webhook_secret):
+        raise PermissionError("Webhook no autorizado")
+    if payload.get("event") != "message.sent":
+        return None
+    created = payload.get("timestamp")
+    if isinstance(created, bool) or not isinstance(created, (int, float)):
+        return None
+    if created > 10**11:
+        created /= 1000
+    if not -60 <= time.time() - created <= settings.max_message_age:
+        return None
+    data = payload.get("data")
+    if not isinstance(data, dict) or data.get("success") is False:
+        return None
+    key = data.get("key")
+    if isinstance(key, dict):
+        if key.get("fromMe") is not True:
+            return None
+        recipient = key.get("remoteJid") or data.get("to")
+    else:
+        # WaSender also documents a flat message.sent payload with to/content.
+        if data.get("status") != "sent":
+            return None
+        recipient = data.get("to")
+    if not isinstance(recipient, str) or recipient.endswith(("@g.us", "@newsletter", "@broadcast", "@lid")):
+        return None
+    recipient = recipient.removesuffix("@s.whatsapp.net")
+    try:
+        phone = phone_number(recipient)
+    except BusinessError:
+        return None
+    message = data.get("message")
+    text = message.get("conversation") if isinstance(message, dict) else None
+    text = text or data.get("content") or data.get("messageBody")
+    if not isinstance(text, str):
+        return None
+    command = text.strip().lower()
+    if command == "/bot off":
+        return phone, True
+    if command == "/bot on":
+        return phone, False
+    return None
 
 
 class WaSender:

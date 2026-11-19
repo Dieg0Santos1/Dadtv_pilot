@@ -12,8 +12,9 @@ from bot.domain import BusinessError
 from bot.engine import Engine
 from bot.recharge import WhatsAppRecharge
 from bot.repository import Repository
+from bot.service import BotService
 from bot.settings import Settings, legacy_service_role_key
-from bot.wasender import incoming_webhook
+from bot.wasender import WaSender, incoming_webhook
 
 
 class Catalog:
@@ -95,7 +96,7 @@ def test_rejects_untrusted_decrypted_media_url():
                 "20.00",
             )
 
-    with pytest.raises(BusinessError, match="dirección válida"):
+    with pytest.raises(BusinessError, match="direcci�n v�lida"):
         asyncio.run(run())
 
 
@@ -162,3 +163,42 @@ def test_recharge_requires_actual_service_role_key(tmp_path):
 def test_real_renewal_cannot_be_enabled_before_commerce():
     with pytest.raises(ValueError, match="BOT_COMMERCE_ENABLED"):
         Settings(renewal_enabled=True).validate()
+
+
+def test_public_whatsapp_recharge_is_allowed_with_valid_service_role(tmp_path):
+    payload = base64.urlsafe_b64encode(json.dumps({"role": "service_role"}).encode()).decode().rstrip("=")
+    Settings(
+        mode="live", provider="wasender", database_path=str(tmp_path / "db"),
+        supabase_url="https://example.supabase.co", supabase_key=f"header.{payload}.signature",
+        tenant_id="tenant", wasender_webhook_secret="hook",
+        wasender_account_phone="51900000001", test_contacts_only=False,
+        whatsapp_recharge_enabled=True,
+    ).validate()
+
+
+def test_paused_chat_silences_image_until_resumed(tmp_path, monkeypatch):
+    import time
+
+    cfg = Settings(mode="live", provider="wasender", database_path=str(tmp_path / "db"),
+                   allowed_phones=("51900000000",), whatsapp_recharge_enabled=True)
+    repo = Repository(cfg.database_path)
+    service = BotService(cfg, repo, Engine(cfg, DemoCatalog(), DemoCommerce(), RuleAssistant()), WaSender(cfg))
+    repo.pause("51900000000", True)
+    image = {"url": "https://encrypted.example/file", "mediaKey": "key", "mimetype": "image/png"}
+    repo.enqueue("paused-image", "51900000000", "", True, image=image)
+    assert asyncio.run(service.process_once()) is True
+    assert repo.stats()["inbox"] == {"done": 1}
+    assert repo.stats()["outbox"] == {}
+
+    async def fake_receipt(self, phone, row, amount):
+        return "La imagen no parece comprobante. No se acredit� saldo."
+
+    monkeypatch.setattr(WhatsAppRecharge, "process", fake_receipt)
+    repo.pause("51900000000", False)
+    with repo.transaction() as db:
+        db.execute("UPDATE sessions SET state=? WHERE phone=?",
+                   (json.dumps({"human_paused": False, "recharge_amount": "20.00",
+                                "recharge_focus": time.time() + 600}), "51900000000"))
+    repo.enqueue("active-image", "51900000000", "", True, image=image)
+    assert asyncio.run(service.process_once()) is True
+    assert repo.stats()["outbox"] == {"pending": 1}

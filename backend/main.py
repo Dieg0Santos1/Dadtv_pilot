@@ -15,13 +15,13 @@ from bot.repository import Repository
 from bot.service import BotService
 from bot.settings import Settings
 from bot.transport import Wamundo, incoming_webhook, valid_secret
-from bot.wasender import WaSender
+from bot.wasender import WaSender, outgoing_control
 from bot.wasender import incoming_webhook as incoming_wasender_webhook
 from fastapi import Depends, FastAPI, HTTPException, Request
 from pydantic import BaseModel, Field
 
 # Uvicorn configura sus propios loggers, pero no emite INFO de dadtv.bot por
-# defecto. Mantener un handler propio hace visibles intención, confianza y
+# defecto. Mantener un handler propio hace visibles intenci�n, confianza y
 # ruta en la salida de error capturada por el servicio Windows.
 bot_logger = logging.getLogger("dadtv.bot")
 bot_logger.setLevel(logging.INFO)
@@ -99,7 +99,7 @@ def create_app(settings=None, service=None):
             ):
                 tasks.append(asyncio.create_task(active.poller()))
         logging.getLogger("dadtv.bot").info(
-            "Bot iniciado: modo=%s engine=%s envío=%s comercio=%s",
+            "Bot iniciado: modo=%s engine=%s env�o=%s comercio=%s",
             settings.mode,
             settings.engine,
             settings.send_enabled,
@@ -157,7 +157,7 @@ def create_app(settings=None, service=None):
         except BusinessError as error:
             raise HTTPException(422, str(error)) from None
         if not body.message.strip() and not body.attachment:
-            raise HTTPException(422, "Envía texto o un adjunto de prueba")
+            raise HTTPException(422, "Env�a texto o un adjunto de prueba")
         active = request.app.state.bot
         async with active.demo_lock:
             inserted = await asyncio.to_thread(
@@ -241,7 +241,7 @@ def create_app(settings=None, service=None):
         except PermissionError:
             raise HTTPException(401, "Webhook no autorizado") from None
         except (ValueError, BusinessError):
-            raise HTTPException(422, "Payload inválido") from None
+            raise HTTPException(422, "Payload inv�lido") from None
         if not message:
             return {"ok": True, "ignored": True}
         inserted = await asyncio.to_thread(
@@ -263,6 +263,17 @@ def create_app(settings=None, service=None):
             payload = json.loads(body)
             if not isinstance(payload, dict):
                 raise ValueError
+            if payload.get("event") == "message.sent":
+                control = outgoing_control(
+                    payload, request.headers.get("X-Webhook-Signature"), settings,
+                )
+                if not control:
+                    record_webhook("outgoing_without_command")
+                    return {"ok": True, "ignored": True}
+                phone, paused = control
+                await asyncio.to_thread(request.app.state.bot.repository.pause, phone, paused)
+                record_webhook("manual_pause" if paused else "manual_resume")
+                return {"ok": True, "manual_control": "paused" if paused else "resumed"}
             message = incoming_wasender_webhook(
                 payload,
                 request.headers.get("X-Webhook-Signature"),
@@ -274,7 +285,7 @@ def create_app(settings=None, service=None):
             raise HTTPException(401, "Webhook no autorizado") from None
         except (ValueError, BusinessError):
             record_webhook("invalid_payload")
-            raise HTTPException(422, "Payload inválido") from None
+            raise HTTPException(422, "Payload inv�lido") from None
         if not message:
             return {"ok": True, "ignored": True}
         inserted = await asyncio.to_thread(

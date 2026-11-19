@@ -1,4 +1,4 @@
-"""Colas durables para una instancia. Requiere un disco persistente en producción."""
+"""Colas durables para una instancia. Requiere un disco persistente en producci�n."""
 
 import json
 import sqlite3
@@ -132,7 +132,7 @@ class Repository:
     def complete(self, batch, reply, state, history_reply=None, support_alert=None):
         phone = batch[0]["phone"]
         with self.transaction() as db:
-            # Una pausa administrativa durante la generación no debe ser sobrescrita.
+            # Una pausa administrativa durante la generaci�n no debe ser sobrescrita.
             current = db.execute(
                 "SELECT state FROM sessions WHERE account=? AND phone=?", (self.account, phone)
             ).fetchone()
@@ -217,7 +217,7 @@ class Repository:
             status = (
                 "sent" if accepted else ("failed" if attempts >= self.max_attempts else "pending")
             )
-            # Borrar credenciales del spool después de la aceptación por el proveedor.
+            # Borrar credenciales del spool despu�s de la aceptaci�n por el proveedor.
             db.execute(
                 "UPDATE outbox SET status=?,body=CASE WHEN ? THEN '' ELSE body END,available_at=?,lease_until=0 WHERE id=?",
                 (status, accepted, time.time() + min(300, 2**attempts * 5), row_id),
@@ -232,7 +232,10 @@ class Repository:
 
     def pause(self, phone, paused):
         state = self.session(phone)
-        state.update(human_paused=paused, pending=None)
+        state.update(human_paused=paused, manual_paused=paused, pending=None)
+        if paused:
+            state.pop("recharge_amount", None)
+            state.pop("recharge_focus", None)
         with self.transaction() as db:
             db.execute(
                 "INSERT OR REPLACE INTO sessions(account,phone,state) VALUES (?,?,?)",
@@ -240,7 +243,7 @@ class Repository:
             )
             if paused:
                 db.execute(
-                    "UPDATE outbox SET status='cancelled',body='' WHERE account=? AND phone=? AND status='pending'",
+                    "UPDATE outbox SET status='cancelled',body='' WHERE account=? AND phone=? AND status='pending' AND dedupe_key IS NULL",
                     (self.account, phone),
                 )
 

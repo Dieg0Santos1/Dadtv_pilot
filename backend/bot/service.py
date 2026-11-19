@@ -50,9 +50,9 @@ class BotService:
                     from bot.engine import Reply
 
                     if len(images) != 1:
-                        reply = Reply("Envíame un comprobante a la vez, por favor.", state)
+                        reply = Reply("Env�ame un comprobante a la vez, por favor.", state)
                     elif not state.get("recharge_amount") or state.get("recharge_focus", 0) <= time.time():
-                        reply = Reply("Para revisar tu comprobante, primero escribe «recargar» y dime el monto exacto; después vuelve a enviar la foto.", state)
+                        reply = Reply("Para revisar tu comprobante, primero escribe �recargar� y dime el monto exacto; despu�s vuelve a enviar la foto.", state)
                     else:
                         receipt = WhatsAppRecharge(self.settings, self.engine.catalog)
                         answer = await receipt.process(phone, images[0], state["recharge_amount"])
@@ -72,7 +72,7 @@ class BotService:
                 ):
                     support_alert = (
                         alert_phone,
-                        f"DadTv: hay una consulta pendiente de atención humana del número +{phone}. "
+                        f"DadTv: hay una consulta pendiente de atenci�n humana del n�mero +{phone}. "
                         "Abre el WhatsApp de DadTvPlay para revisarla.",
                         f"support:{batch[0]['id']}",
                     )
@@ -88,7 +88,7 @@ class BotService:
                 await asyncio.to_thread(self.repository.complete, batch, str(error), state)
             except Exception as error:
                 logger.error(
-                    "Falló procesamiento de lote %s: %s", batch[0]["id"], type(error).__name__
+                    "Fall� procesamiento de lote %s: %s", batch[0]["id"], type(error).__name__
                 )
                 await asyncio.to_thread(self.repository.fail_batch, batch)
             return True
@@ -99,6 +99,13 @@ class BotService:
         row = await asyncio.to_thread(self.repository.claim_outbox)
         if not row:
             return False
+        # A manual takeover can happen after a reply was queued. An automatic
+        # complaint handoff still sends its acknowledgement to the customer.
+        if not row.get("dedupe_key") and (
+            await asyncio.to_thread(self.repository.session, row["phone"])
+        ).get("manual_paused"):
+            await asyncio.to_thread(self.repository.cancel_outbox, row["id"])
+            return True
         if not contact_allowed(row["phone"], self.settings):
             await asyncio.to_thread(self.repository.cancel_outbox, row["id"])
             return True
@@ -106,7 +113,7 @@ class BotService:
         try:
             accepted = await self.transport.send(row["phone"], row["body"])
         except Exception as error:
-            logger.error("Falló envío %s: %s", row["id"], type(error).__name__)
+            logger.error("Fall� env�o %s: %s", row["id"], type(error).__name__)
         await asyncio.to_thread(self.repository.finish_outbox, row["id"], accepted)
         return True
 
@@ -119,7 +126,7 @@ class BotService:
             chats = await self.transport.received()
             if len(chats) == 30:
                 logger.warning(
-                    "Se alcanzó el límite del sondeo; verificar webhook y recuperación de historial"
+                    "Se alcanz� el l�mite del sondeo; verificar webhook y recuperaci�n de historial"
                 )
             for chat in chats:
                 message = incoming_poll(chat, self.settings)
@@ -136,7 +143,7 @@ class BotService:
                 if not sent and not processed:
                     await asyncio.sleep(1)
             except Exception as error:
-                logger.error("Falló worker: %s", type(error).__name__)
+                logger.error("Fall� worker: %s", type(error).__name__)
                 await asyncio.sleep(5)
 
     async def poller(self):
@@ -144,5 +151,5 @@ class BotService:
             try:
                 await self.poll_once()
             except Exception as error:
-                logger.error("Falló sondeo: %s", type(error).__name__)
+                logger.error("Fall� sondeo: %s", type(error).__name__)
             await asyncio.sleep(self.settings.poll_seconds)

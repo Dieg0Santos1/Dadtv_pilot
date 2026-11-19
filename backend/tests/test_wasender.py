@@ -2,6 +2,7 @@ import asyncio
 import time
 
 import httpx
+import pytest
 from bot.assistant import RuleAssistant
 from bot.catalog import DemoCatalog
 from bot.commerce import DemoCommerce
@@ -9,7 +10,7 @@ from bot.engine import Engine
 from bot.repository import Repository
 from bot.service import BotService
 from bot.settings import Settings
-from bot.wasender import WaSender, incoming_webhook
+from bot.wasender import WaSender, incoming_webhook, outgoing_control
 from fastapi.testclient import TestClient
 from main import create_app
 
@@ -45,6 +46,39 @@ def test_wasender_ingress_filters_sender_origin_and_event():
     lid = payload()
     lid["data"]["messages"]["key"].update(remoteJid="12345@lid", cleanedSenderPn="", senderPn="")
     assert incoming_webhook(lid, "hook", settings) is None
+
+
+def test_outgoing_owner_command_is_explicit_and_authenticated():
+    settings = Settings(wasender_webhook_secret="hook")
+    sent = {
+        "event": "message.sent", "timestamp": time.time(),
+        "data": {"key": {"id": "manual-1", "fromMe": True,
+                         "remoteJid": "51906462381@s.whatsapp.net"},
+                 "message": {"conversation": "/bot off"}, "success": True},
+    }
+    assert outgoing_control(sent, "hook", settings) == ("51906462381", True)
+    sent["data"]["message"]["conversation"] = "/bot on"
+    assert outgoing_control(sent, "hook", settings) == ("51906462381", False)
+    sent["data"]["message"]["conversation"] = "Hola, soy tu asesor"
+    assert outgoing_control(sent, "hook", settings) is None
+    sent["data"]["key"]["fromMe"] = False
+    sent["data"]["message"]["conversation"] = "/bot off"
+    assert outgoing_control(sent, "hook", settings) is None
+    sent["data"]["key"]["fromMe"] = True
+    sent["data"]["key"]["remoteJid"] = "group@g.us"
+    assert outgoing_control(sent, "hook", settings) is None
+    with pytest.raises(PermissionError):
+        outgoing_control(sent, "wrong-secret", settings)
+
+
+def test_outgoing_flat_wasender_payload_and_old_event():
+    settings = Settings(wasender_webhook_secret="hook")
+    sent = {"event": "message.sent", "timestamp": time.time(),
+            "data": {"id": "manual-2", "to": "+51906462381", "status": "sent",
+                     "content": "/bot off"}}
+    assert outgoing_control(sent, "hook", settings) == ("51906462381", True)
+    sent["timestamp"] -= settings.max_message_age + 60
+    assert outgoing_control(sent, "hook", settings) is None
 
 
 def test_wasender_webhook_is_authenticated_and_deduplicated(tmp_path):
@@ -86,6 +120,44 @@ def test_wasender_webhook_is_authenticated_and_deduplicated(tmp_path):
             "phone_not_allowed": 1,
         }
     assert repository.stats()["inbox"] == {"pending": 1}
+
+
+def test_owner_can_pause_and_resume_one_chat_without_affecting_others(tmp_path):
+    settings = Settings(
+        mode="live", provider="wasender", database_path=str(tmp_path / "db"),
+        wasender_webhook_secret="hook", wasender_account_phone="51900000001",
+        admin_token="test-admin", test_contacts_only=False, debounce_seconds=1000,
+    )
+    repo = Repository(settings.database_path)
+    service = BotService(settings, repo, Engine(settings, DemoCatalog(), DemoCommerce(), RuleAssistant()), WaSender(settings))
+    sent = {"event": "message.sent", "timestamp": time.time(),
+            "data": {"key": {"id": "manual-off", "fromMe": True,
+                             "remoteJid": "+51906462381"},
+                     "message": {"conversation": "/bot off"}, "success": True}}
+    with TestClient(create_app(settings, service)) as client:
+        headers = {"X-Webhook-Signature": "hook"}
+        assert client.post("/webhook/wasender", json=sent, headers=headers).json()["manual_control"] == "paused"
+        assert repo.session("51906462381")["human_paused"] is True
+        assert not repo.session("51999999999").get("human_paused")
+        assert client.post("/webhook/wasender", json=payload("51999999999"), headers=headers).json()["duplicate"] is False
+        sent["data"]["key"]["id"] = "manual-on"
+        sent["data"]["message"]["conversation"] = "/bot on"
+        assert client.post("/webhook/wasender", json=sent, headers=headers).json()["manual_control"] == "resumed"
+        assert repo.session("51906462381")["human_paused"] is False
+
+
+def test_manual_pause_cancels_pending_customer_reply(tmp_path):
+    phone = "51906462381"
+    settings = Settings(database_path=str(tmp_path / "db"), send_enabled=True,
+                        allowed_phones=(phone,))
+    repo = Repository(settings.database_path)
+    service = BotService(settings, repo, Engine(settings, DemoCatalog(), DemoCommerce(), RuleAssistant()), object())
+    repo.enqueue("hello", phone, "Hola")
+    asyncio.run(service.process_once())
+    assert repo.stats()["outbox"] == {"pending": 1}
+    repo.pause(phone, True)
+    assert repo.stats()["outbox"] == {"cancelled": 1}
+    assert asyncio.run(service.send_once()) is False
 
 
 def test_wasender_send_uses_session_token_and_allowlist():
