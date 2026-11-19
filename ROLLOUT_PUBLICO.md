@@ -25,3 +25,10 @@ Los comandos aparecen en la conversaci�n. Tambi�n se aceptan con una `/` ini
 6. Probar un saludo desde otro n�mero. Para mantener una conversaci�n personal en ese chat, el propietario env�a `bot off` antes de seguir conversando. Para devolver el chat al bot, env�a `bot on`.
 
 Este cambio no modifica SQL ni la funci�n de verificaci�n de comprobantes. La acreditaci�n sigue condicionada a la verificaci�n existente. No repetir un Yape si una captura queda pendiente de revisi�n.
+
+## Verificaci�n del 19/11/2026
+
+- El propietario envi� `bot off` y el estado administrativo del contacto de prueba cambi� a `human_paused=true`. Con `bot on`, volvi� a `false`.
+- El contacto de prueba inici� `recargar`, indic� S/ 20 y envi� una foto de un objeto. El bot respondi� que no parec�a un comprobante; el saldo le�do en Supabase fue S/ 7.00 antes y despu�s.
+- Tras ejecutar la activaci�n p�blica, `/health` respondi� 200 y `/admin/status` mostr� `provider=wasender`, `send_enabled=true`, `test_contacts_only=false` y `commerce_enabled=true`.
+- Esta prueba de imagen no verifica una acreditaci�n real: no se envi� un comprobante nuevo de pago. La recepci�n desde un segundo n�mero requiere una prueba separada para demostrar el recorrido externo completo.
