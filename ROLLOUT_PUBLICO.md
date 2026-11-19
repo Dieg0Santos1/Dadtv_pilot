@@ -31,4 +31,5 @@ Este cambio no modifica SQL ni la funci�n de verificaci�n de comprobantes. L
 - El propietario envi� `bot off` y el estado administrativo del contacto de prueba cambi� a `human_paused=true`. Con `bot on`, volvi� a `false`.
 - El contacto de prueba inici� `recargar`, indic� S/ 20 y envi� una foto de un objeto. El bot respondi� que no parec�a un comprobante; el saldo le�do en Supabase fue S/ 7.00 antes y despu�s.
 - Tras ejecutar la activaci�n p�blica, `/health` respondi� 200 y `/admin/status` mostr� `provider=wasender`, `send_enabled=true`, `test_contacts_only=false` y `commerce_enabled=true`.
-- Esta prueba de imagen no verifica una acreditaci�n real: no se envi� un comprobante nuevo de pago. La recepci�n desde un segundo n�mero requiere una prueba separada para demostrar el recorrido externo completo.
+- Un segundo n�mero de WhatsApp envi� una consulta y recibi� respuesta del bot despu�s de la apertura p�blica.
+- Esta prueba de imagen no verifica una acreditaci�n real: no se envi� un comprobante nuevo de pago.
