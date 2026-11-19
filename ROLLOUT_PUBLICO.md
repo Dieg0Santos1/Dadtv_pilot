@@ -17,7 +17,7 @@ Los comandos aparecen en la conversaci�n. Un mensaje normal del propietario no
 
 ## Despliegue y prueba
 
-1. Descomprimir el ZIP en `C:\DadTvPublicUpdate` y ejecutar `scripts\deploy-public-handover.ps1` como administrador. Este paso respalda los cinco archivos cambiados, reinicia `DadTvBot` y deja `BOT_TEST_CONTACTS_ONLY=true`.
+1. Descomprimir el ZIP en `C:\DadTvPublicUpdate` y ejecutar `scripts\deploy-public-handover.ps1` como administrador. Este paso respalda los cinco archivos cambiados y `.env`, reinicia `DadTvBot` y deja temporalmente `BOT_TEST_CONTACTS_ONLY=true`, incluso si la VM estaba abierta a todos.
 2. Marcar `message.sent` en el webhook de la sesi�n DadTvPlay. Mantener `messages.received` marcado.
 3. Desde el WhatsApp del propietario, enviar `/bot on` al chat de prueba que estaba pausado. Confirmar que ese chat vuelve a responder. Luego enviar `/bot off`, comprobar que no responde a un texto de prueba, y `/bot on` otra vez.
 4. Desde el n�mero de prueba, enviar `recargar` y el monto `20`. Enviar una foto de un objeto, sin comprobante. Esperar la respuesta `La imagen no parece comprobante` y verificar que no se acredit� saldo.
