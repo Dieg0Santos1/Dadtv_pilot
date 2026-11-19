@@ -66,7 +66,7 @@ def incoming_webhook(payload, signature, settings, on_ignored=None):
     return result
 
 
-def outgoing_control(payload, signature, settings):
+def outgoing_control(payload, signature, settings, on_ignored=None):
     """Read an explicit command sent from the owner's WhatsApp session.
 
     Authenticated ``message.sent`` or outgoing ``messages.upsert`` can pause
@@ -75,19 +75,25 @@ def outgoing_control(payload, signature, settings):
     """
     if not valid_secret(signature, settings.wasender_webhook_secret):
         raise PermissionError("Webhook no autorizado")
+
+    def ignored(reason):
+        if on_ignored is not None:
+            on_ignored(reason)
+        return None
+
     event = payload.get("event")
     if event not in {"message.sent", "messages.upsert"}:
-        return None
+        return ignored("other_event")
     created = payload.get("timestamp")
     if isinstance(created, bool) or not isinstance(created, (int, float)):
-        return None
+        return ignored("invalid_timestamp")
     if created > 10**11:
         created /= 1000
     if not -60 <= time.time() - created <= settings.max_message_age:
-        return None
+        return ignored("outside_time_window")
     data = payload.get("data")
     if not isinstance(data, dict) or data.get("success") is False:
-        return None
+        return ignored("invalid_data")
     if event == "messages.upsert":
         messages = data.get("messages")
         if isinstance(messages, list) and len(messages) == 1:
@@ -95,37 +101,42 @@ def outgoing_control(payload, signature, settings):
         elif isinstance(messages, dict):
             data = messages
         else:
-            return None
+            return ignored("unexpected_messages_shape")
         if not isinstance(data, dict):
-            return None
+            return ignored("invalid_message")
     key = data.get("key")
     if isinstance(key, dict):
         if key.get("fromMe") is not True:
-            return None
+            return ignored("not_from_owner")
         recipient = key.get("remoteJid") or data.get("to")
     else:
         # WaSender also documents a flat message.sent payload with to/content.
         if data.get("status") != "sent":
-            return None
+            return ignored("no_sent_status")
         recipient = data.get("to")
-    if not isinstance(recipient, str) or recipient.endswith(("@g.us", "@newsletter", "@broadcast", "@lid")):
-        return None
+    if not isinstance(recipient, str):
+        return ignored("missing_recipient")
+    if recipient.endswith(("@g.us", "@newsletter", "@broadcast", "@lid")):
+        return ignored("non_phone_recipient")
     recipient = recipient.removesuffix("@s.whatsapp.net")
     try:
         phone = phone_number(recipient)
     except BusinessError:
-        return None
+        return ignored("invalid_recipient")
     message = data.get("message")
     text = message.get("conversation") if isinstance(message, dict) else None
+    if not text and isinstance(message, dict):
+        extended = message.get("extendedTextMessage")
+        text = extended.get("text") if isinstance(extended, dict) else None
     text = text or data.get("content") or data.get("messageBody")
     if not isinstance(text, str):
-        return None
+        return ignored("missing_text")
     command = text.strip().lower()
-    if command == "/bot off":
+    if command in {"/bot off", "bot off"}:
         return phone, True
-    if command == "/bot on":
+    if command in {"/bot on", "bot on"}:
         return phone, False
-    return None
+    return ignored("other_text")
 
 
 class WaSender:

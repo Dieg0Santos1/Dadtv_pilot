@@ -57,7 +57,11 @@ def test_outgoing_owner_command_is_explicit_and_authenticated():
                  "message": {"conversation": "/bot off"}, "success": True},
     }
     assert outgoing_control(sent, "hook", settings) == ("51906462381", True)
+    sent["data"]["message"]["conversation"] = "bot off"
+    assert outgoing_control(sent, "hook", settings) == ("51906462381", True)
     sent["data"]["message"]["conversation"] = "/bot on"
+    assert outgoing_control(sent, "hook", settings) == ("51906462381", False)
+    sent["data"]["message"]["conversation"] = "bot on"
     assert outgoing_control(sent, "hook", settings) == ("51906462381", False)
     sent["data"]["message"]["conversation"] = "Hola, soy tu asesor"
     assert outgoing_control(sent, "hook", settings) is None
@@ -91,6 +95,9 @@ def test_outgoing_upsert_from_whatsapp_app_is_owner_control_only():
     event = {"event": "messages.upsert", "timestamp": time.time(),
              "data": {"messages": [message]}}
     assert outgoing_control(event, "hook", settings) == ("51906462381", True)
+    message["messageBody"] = "bot off"
+    message["message"]["conversation"] = "bot off"
+    assert outgoing_control(event, "hook", settings) == ("51906462381", True)
     message["key"]["fromMe"] = False
     assert outgoing_control(event, "hook", settings) is None
     message["key"]["fromMe"] = True
@@ -99,6 +106,17 @@ def test_outgoing_upsert_from_whatsapp_app_is_owner_control_only():
     assert outgoing_control(event, "hook", settings) is None
     event["data"]["messages"].append(message)
     assert outgoing_control(event, "hook", settings) is None
+
+
+def test_outgoing_control_reports_safe_ignored_reason():
+    settings = Settings(wasender_webhook_secret="hook")
+    event = {"event": "messages.upsert", "timestamp": time.time(),
+             "data": {"messages": [{"key": {"fromMe": True,
+                                              "remoteJid": "123@lid"},
+                                    "messageBody": "bot off"}]}}
+    reasons = []
+    assert outgoing_control(event, "hook", settings, on_ignored=reasons.append) is None
+    assert reasons == ["non_phone_recipient"]
 
 
 def test_wasender_webhook_is_authenticated_and_deduplicated(tmp_path):

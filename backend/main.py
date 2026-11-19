@@ -264,11 +264,13 @@ def create_app(settings=None, service=None):
             if not isinstance(payload, dict):
                 raise ValueError
             if payload.get("event") in {"message.sent", "messages.upsert"}:
+                ignored_reasons = []
                 control = outgoing_control(
                     payload, request.headers.get("X-Webhook-Signature"), settings,
+                    on_ignored=ignored_reasons.append,
                 )
                 if not control:
-                    record_webhook("outgoing_without_command")
+                    record_webhook("outgoing_" + (ignored_reasons[0] if ignored_reasons else "ignored"))
                     return {"ok": True, "ignored": True}
                 phone, paused = control
                 await asyncio.to_thread(request.app.state.bot.repository.pause, phone, paused)
