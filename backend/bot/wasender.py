@@ -116,13 +116,16 @@ def outgoing_control(payload, signature, settings, on_ignored=None):
         recipient = data.get("to")
     if not isinstance(recipient, str):
         return ignored("missing_recipient")
-    if recipient.endswith(("@g.us", "@newsletter", "@broadcast", "@lid")):
+    if recipient.endswith(("@g.us", "@newsletter", "@broadcast")):
         return ignored("non_phone_recipient")
-    recipient = recipient.removesuffix("@s.whatsapp.net")
-    try:
-        phone = phone_number(recipient)
-    except BusinessError:
-        return ignored("invalid_recipient")
+    if recipient.endswith("@lid"):
+        phone = recipient
+    else:
+        recipient = recipient.removesuffix("@s.whatsapp.net")
+        try:
+            phone = phone_number(recipient)
+        except BusinessError:
+            return ignored("invalid_recipient")
     message = data.get("message")
     text = message.get("conversation") if isinstance(message, dict) else None
     if not text and isinstance(message, dict):
@@ -141,9 +144,31 @@ def outgoing_control(payload, signature, settings, on_ignored=None):
 
 class WaSender:
     API = "https://www.wasenderapi.com/api/send-message"
+    LID_API = "https://www.wasenderapi.com/api/pn-from-lid/"
 
     def __init__(self, settings, client=None):
         self.settings, self.client = settings, client
+
+    async def resolve_lid(self, lid):
+        """Resolve a WaSender LID before applying a per-contact owner command."""
+        if not isinstance(lid, str) or not lid.endswith("@lid"):
+            raise BusinessError("LID invalido")
+        kwargs = {"headers": {"Authorization": f"Bearer {self.settings.wasender_token}"}}
+        try:
+            if self.client:
+                response = await self.client.get(self.LID_API + lid, **kwargs)
+            else:
+                async with httpx.AsyncClient(timeout=10) as client:
+                    response = await client.get(self.LID_API + lid, **kwargs)
+            response.raise_for_status()
+            body = response.json()
+        except (httpx.HTTPError, ValueError) as error:
+            raise BusinessError("No se pudo resolver el LID") from error
+        data = body.get("data") if isinstance(body, dict) else None
+        pn = data.get("pn") if isinstance(data, dict) else None
+        if not isinstance(pn, str) or not pn.endswith("@s.whatsapp.net"):
+            raise BusinessError("WaSender no devolvio un numero para el LID")
+        return phone_number(pn.removesuffix("@s.whatsapp.net"))
 
     async def send(self, phone, text):
         if not self.settings.send_enabled or not contact_allowed(phone, self.settings):

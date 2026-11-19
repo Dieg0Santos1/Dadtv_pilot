@@ -13,7 +13,7 @@ Activar en WaSender las suscripciones `messages.received`, `message.sent` y `mes
 | `bot off` | Pausa �nicamente ese chat y cancela las respuestas autom�ticas pendientes. |
 | `bot on` | Reanuda �nicamente ese chat. |
 
-Los comandos aparecen en la conversaci�n. Tambi�n se aceptan con una `/` inicial. Un mensaje normal del propietario no cambia el estado. El backend solo acepta el control si el evento saliente viene del webhook autenticado, es reciente y apunta a un chat privado. Al pausar tambi�n se borra el monto de recarga pendiente, de modo que no se use una captura contra una intenci�n anterior.
+Los comandos aparecen en la conversaci�n. Tambi�n se aceptan con una `/` inicial. Un mensaje normal del propietario no cambia el estado. El backend solo acepta el control si el evento saliente viene del webhook autenticado, es reciente y apunta a un chat privado. Cuando WaSender entrega un LID en lugar del n�mero del destinatario, el backend usa la API `pn-from-lid` con el token de la sesi�n antes de cambiar la pausa; si no puede resolverlo, no cambia ning�n chat. Al pausar tambi�n se borra el monto de recarga pendiente, de modo que no se use una captura contra una intenci�n anterior.
 
 ## Despliegue y prueba
 

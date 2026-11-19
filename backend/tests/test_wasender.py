@@ -112,11 +112,57 @@ def test_outgoing_control_reports_safe_ignored_reason():
     settings = Settings(wasender_webhook_secret="hook")
     event = {"event": "messages.upsert", "timestamp": time.time(),
              "data": {"messages": [{"key": {"fromMe": True,
-                                              "remoteJid": "123@lid"},
+                                              "remoteJid": "group@g.us"},
                                     "messageBody": "bot off"}]}}
     reasons = []
     assert outgoing_control(event, "hook", settings, on_ignored=reasons.append) is None
     assert reasons == ["non_phone_recipient"]
+
+
+def test_owner_command_with_lid_is_resolved_before_pausing(tmp_path, monkeypatch):
+    phone = "51906462381"
+    settings = Settings(
+        mode="live", provider="wasender", database_path=str(tmp_path / "db"),
+        wasender_webhook_secret="hook", wasender_account_phone="51900000001",
+        admin_token="test-admin", allowed_phones=(phone,), debounce_seconds=1000,
+    )
+    repo = Repository(settings.database_path)
+    transport = WaSender(settings)
+
+    async def fake_resolve(lid):
+        assert lid == "123456@lid"
+        return phone
+
+    monkeypatch.setattr(transport, "resolve_lid", fake_resolve)
+    service = BotService(settings, repo, Engine(settings, DemoCatalog(), DemoCommerce(), RuleAssistant()), transport)
+    event = {"event": "messages.upsert", "timestamp": time.time(),
+             "data": {"messages": [{"key": {"id": "owner-command", "fromMe": True,
+                                              "remoteJid": "123456@lid"},
+                                    "messageBody": "bot off"}]}}
+    with TestClient(create_app(settings, service)) as client:
+        response = client.post("/webhook/wasender", json=event,
+                               headers={"X-Webhook-Signature": "hook"})
+        assert response.status_code == 200
+        assert response.json()["manual_control"] == "paused"
+        assert repo.session(phone)["human_paused"] is True
+
+
+def test_wasender_resolves_lid_with_session_token():
+    seen = []
+
+    def mock(request):
+        seen.append(request)
+        return httpx.Response(200, json={"success": True,
+                                         "data": {"pn": "51906462381@s.whatsapp.net"}})
+
+    async def check():
+        async with httpx.AsyncClient(transport=httpx.MockTransport(mock)) as client:
+            sender = WaSender(Settings(wasender_token="test-token"), client)
+            assert await sender.resolve_lid("123456@lid") == "51906462381"
+
+    asyncio.run(check())
+    assert seen[0].url.path == "/api/pn-from-lid/123456@lid"
+    assert seen[0].headers["Authorization"] == "Bearer test-token"
 
 
 def test_wasender_webhook_is_authenticated_and_deduplicated(tmp_path):

@@ -273,6 +273,12 @@ def create_app(settings=None, service=None):
                     record_webhook("outgoing_" + (ignored_reasons[0] if ignored_reasons else "ignored"))
                     return {"ok": True, "ignored": True}
                 phone, paused = control
+                if phone.endswith("@lid"):
+                    try:
+                        phone = await request.app.state.bot.transport.resolve_lid(phone)
+                    except BusinessError:
+                        record_webhook("owner_lid_resolution_failed")
+                        raise HTTPException(503, "No se pudo identificar el chat saliente") from None
                 await asyncio.to_thread(request.app.state.bot.repository.pause, phone, paused)
                 record_webhook("manual_pause" if paused else "manual_resume")
                 return {"ok": True, "manual_control": "paused" if paused else "resumed"}
