@@ -17,7 +17,7 @@ $allowedMatch = [regex]::Match($envText, '(?m)^BOT_ALLOWED_PHONES[ \t]*=[ \t]*(.
 if (-not $allowedMatch.Success -or -not $allowedMatch.Groups[1].Value.Trim().Trim('"', "'")) {
     throw 'Falta BOT_ALLOWED_PHONES para la prueba restringida.'
 }
-$flagPattern = '(?im)^BOT_TEST_CONTACTS_ONLY[ \t]*=[ \t]*["'']?(?:true|false|1|0)["'']?[ \t]*$'
+$flagPattern = '(?im)^BOT_TEST_CONTACTS_ONLY[ \t]*=[ \t]*["'']?(?:true|false|1|0)["'']?[ \t]*\r?$'
 if (-not [regex]::IsMatch($envText, $flagPattern) -and
     [regex]::IsMatch($envText, '(?im)^BOT_TEST_CONTACTS_ONLY[ \t]*=')) {
     throw 'BOT_TEST_CONTACTS_ONLY tiene un valor no reconocido.'

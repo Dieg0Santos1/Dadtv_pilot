@@ -16,13 +16,13 @@ $counts = $status.wasender_webhook.counts
 if ($counts.manual_pause -lt 1 -or $counts.manual_resume -lt 1) {
     throw 'Primero verifica /bot off y /bot on desde el WhatsApp del propietario.'
 }
-if ($envText -notmatch '(?m)^BOT_TEST_CONTACTS_ONLY=true[ \t]*$') {
+if ($envText -notmatch '(?m)^BOT_TEST_CONTACTS_ONLY=true[ \t]*\r?$') {
     throw 'Se esperaba BOT_TEST_CONTACTS_ONLY=true; revisa el estado actual.'
 }
 $backup = "$envPath.backup-public-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 Copy-Item -LiteralPath $envPath -Destination $backup
 try {
-    $updated = [regex]::Replace($envText, '(?m)^BOT_TEST_CONTACTS_ONLY=true[ \t]*$', 'BOT_TEST_CONTACTS_ONLY=false')
+    $updated = [regex]::Replace($envText, '(?m)^BOT_TEST_CONTACTS_ONLY=true[ \t]*\r?$', 'BOT_TEST_CONTACTS_ONLY=false')
     [System.IO.File]::WriteAllText($envPath, $updated, [System.Text.UTF8Encoding]::new($false))
     Restart-Service -Name $serviceName
     $ready = $false
