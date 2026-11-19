@@ -263,7 +263,7 @@ def create_app(settings=None, service=None):
             payload = json.loads(body)
             if not isinstance(payload, dict):
                 raise ValueError
-            if payload.get("event") == "message.sent":
+            if payload.get("event") in {"message.sent", "messages.upsert"}:
                 control = outgoing_control(
                     payload, request.headers.get("X-Webhook-Signature"), settings,
                 )

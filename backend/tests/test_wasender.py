@@ -81,6 +81,26 @@ def test_outgoing_flat_wasender_payload_and_old_event():
     assert outgoing_control(sent, "hook", settings) is None
 
 
+def test_outgoing_upsert_from_whatsapp_app_is_owner_control_only():
+    settings = Settings(wasender_webhook_secret="hook")
+    message = {
+        "key": {"id": "app-1", "fromMe": True,
+                "remoteJid": "51906462381@s.whatsapp.net"},
+        "messageBody": "/bot off", "message": {"conversation": "/bot off"},
+    }
+    event = {"event": "messages.upsert", "timestamp": time.time(),
+             "data": {"messages": [message]}}
+    assert outgoing_control(event, "hook", settings) == ("51906462381", True)
+    message["key"]["fromMe"] = False
+    assert outgoing_control(event, "hook", settings) is None
+    message["key"]["fromMe"] = True
+    message["messageBody"] = "Hola"
+    message["message"]["conversation"] = "Hola"
+    assert outgoing_control(event, "hook", settings) is None
+    event["data"]["messages"].append(message)
+    assert outgoing_control(event, "hook", settings) is None
+
+
 def test_wasender_webhook_is_authenticated_and_deduplicated(tmp_path):
     settings = Settings(
         mode="live",

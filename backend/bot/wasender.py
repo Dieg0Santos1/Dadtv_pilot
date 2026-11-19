@@ -69,13 +69,14 @@ def incoming_webhook(payload, signature, settings, on_ignored=None):
 def outgoing_control(payload, signature, settings):
     """Read an explicit command sent from the owner's WhatsApp session.
 
-    Only ``message.sent`` from the authenticated session can pause or resume
-    a private chat. Ordinary outgoing messages, including bot replies, are
-    ignored. The command is visible in the chat so the owner can audit it.
+    Authenticated ``message.sent`` or outgoing ``messages.upsert`` can pause
+    or resume a private chat. Ordinary outgoing messages, including bot
+    replies, are ignored. The command is visible in the owner's chat.
     """
     if not valid_secret(signature, settings.wasender_webhook_secret):
         raise PermissionError("Webhook no autorizado")
-    if payload.get("event") != "message.sent":
+    event = payload.get("event")
+    if event not in {"message.sent", "messages.upsert"}:
         return None
     created = payload.get("timestamp")
     if isinstance(created, bool) or not isinstance(created, (int, float)):
@@ -87,6 +88,16 @@ def outgoing_control(payload, signature, settings):
     data = payload.get("data")
     if not isinstance(data, dict) or data.get("success") is False:
         return None
+    if event == "messages.upsert":
+        messages = data.get("messages")
+        if isinstance(messages, list) and len(messages) == 1:
+            data = messages[0]
+        elif isinstance(messages, dict):
+            data = messages
+        else:
+            return None
+        if not isinstance(data, dict):
+            return None
     key = data.get("key")
     if isinstance(key, dict):
         if key.get("fromMe") is not True:
