@@ -37,7 +37,7 @@ def incoming_webhook(payload, settings):
         return None
     data = payload.get("data")
     if not isinstance(data, dict):
-        raise BusinessError("Payload inválido")
+        raise BusinessError("Payload inv�lido")
     # wid es distinto de account_unique: configurarlo tras una prueba real.
     if not settings.wamundo_account_wid or data.get("wid") != settings.wamundo_account_wid:
         return None
@@ -60,9 +60,9 @@ def contact_allowed(phone, settings):
     return not settings.test_contacts_only or number in settings.allowed_phones
 
 
-def incoming_content(provider_id, phone, message, attachment):
+def incoming_content(provider_id, phone, message, attachment, allow_lid=False):
     try:
-        number = phone_number(phone)
+        number = phone if allow_lid and isinstance(phone, str) and phone.endswith("@lid") else phone_number(phone)
     except BusinessError:
         return None
     message = "" if message is None else message
@@ -105,7 +105,7 @@ class Wamundo:
             or body.get("status") != 200
             or not isinstance(body.get("data"), list)
         ):
-            raise ValueError("Respuesta inválida de Wamundo")
+            raise ValueError("Respuesta inv�lida de Wamundo")
         return sorted(body["data"], key=lambda row: row.get("created") or 0)
 
     async def send(self, phone, text):

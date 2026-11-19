@@ -14,7 +14,7 @@ from bot.intent_model import IntentModel
 from bot.repository import Repository
 from bot.service import BotService
 from bot.settings import Settings
-from bot.transport import Wamundo, incoming_webhook, valid_secret
+from bot.transport import Wamundo, contact_allowed, incoming_webhook, valid_secret
 from bot.wasender import WaSender, outgoing_control
 from bot.wasender import incoming_webhook as incoming_wasender_webhook
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -296,6 +296,15 @@ def create_app(settings=None, service=None):
             raise HTTPException(422, "Payload inv�lido") from None
         if not message:
             return {"ok": True, "ignored": True}
+        if message["phone"].endswith("@lid"):
+            try:
+                message["phone"] = await request.app.state.bot.transport.resolve_lid(message["phone"])
+            except BusinessError:
+                record_webhook("incoming_lid_resolution_failed")
+                raise HTTPException(503, "No se pudo identificar al remitente") from None
+            if not contact_allowed(message["phone"], settings):
+                record_webhook("phone_not_allowed")
+                return {"ok": True, "ignored": True}
         inserted = await asyncio.to_thread(
             request.app.state.bot.repository.enqueue, **message, delay=settings.debounce_seconds
         )

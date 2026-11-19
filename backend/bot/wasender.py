@@ -39,29 +39,47 @@ def incoming_webhook(payload, signature, settings, on_ignored=None):
         created /= 1000
     if not -60 <= time.time() - created <= settings.max_message_age:
         return ignored("outside_time_window")
-    # LIDs are not phone numbers. WaSender recommends cleanedSenderPn.
+    # LIDs are not phone numbers. Resolve them through WaSender before enqueue.
     sender = key.get("cleanedSenderPn") or key.get("senderPn")
     if not sender and jid.endswith("@s.whatsapp.net"):
         sender = jid.removesuffix("@s.whatsapp.net")
+    if not sender and jid.endswith("@lid"):
+        sender = jid
     if isinstance(sender, str) and sender.endswith("@s.whatsapp.net"):
         sender = sender.removesuffix("@s.whatsapp.net")
-    try:
-        number = phone_number(sender)
-    except BusinessError:
-        return ignored("missing_phone")
-    if not contact_allowed(number, settings):
+    if isinstance(sender, str) and sender.endswith("@lid"):
+        number = sender
+    else:
+        try:
+            number = phone_number(sender)
+        except BusinessError:
+            return ignored("missing_phone")
+    if not number.endswith("@lid") and not contact_allowed(number, settings):
         return ignored("phone_not_allowed")
     raw = message.get("message")
     attachment = isinstance(raw, dict) and any(
         name in raw for name in ("imageMessage", "videoMessage", "audioMessage", "documentMessage")
     )
-    result = incoming_content(key.get("id"), number, message.get("messageBody"), attachment)
+    body = message.get("messageBody")
+    if (not isinstance(body, str) or not body.strip()) and isinstance(raw, dict):
+        body = raw.get("conversation")
+        if not body:
+            extended = raw.get("extendedTextMessage")
+            body = extended.get("text") if isinstance(extended, dict) else None
+        if not body:
+            for media_type in ("imageMessage", "videoMessage", "documentMessage"):
+                media = raw.get(media_type)
+                if isinstance(media, dict) and media.get("caption"):
+                    body = media["caption"]
+                    break
+    message_id = key.get("id") or message.get("id")
+    result = incoming_content(message_id, number, body, attachment, allow_lid=True)
     image = raw.get("imageMessage") if isinstance(raw, dict) else None
     if result and isinstance(image, dict):
         safe = {name: image.get(name) for name in ("url", "mimetype", "mediaKey", "fileSha256", "fileLength")}
         if all(isinstance(safe[name], str) and safe[name] for name in ("url", "mimetype", "mediaKey")):
             result["image"] = safe
-    if not key.get("id") or not result:
+    if not message_id or not result:
         return ignored("missing_id_or_content")
     return result
 

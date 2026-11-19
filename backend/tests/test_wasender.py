@@ -45,7 +45,19 @@ def test_wasender_ingress_filters_sender_origin_and_event():
     assert incoming_webhook(group, "hook", settings) is None
     lid = payload()
     lid["data"]["messages"]["key"].update(remoteJid="12345@lid", cleanedSenderPn="", senderPn="")
-    assert incoming_webhook(lid, "hook", settings) is None
+    assert incoming_webhook(lid, "hook", settings)["phone"] == "12345@lid"
+
+
+def test_wasender_incoming_text_falls_back_to_raw_message():
+    settings = Settings(wasender_webhook_secret="hook", test_contacts_only=False)
+    incoming = payload("51999999999")
+    incoming["data"]["messages"]["messageBody"] = None
+    incoming["data"]["messages"]["message"] = {
+        "extendedTextMessage": {"text": "Hola, quiero HBO"}
+    }
+    parsed = incoming_webhook(incoming, "hook", settings)
+    assert parsed["phone"] == "51999999999"
+    assert parsed["message"] == "Hola, quiero HBO"
 
 
 def test_outgoing_owner_command_is_explicit_and_authenticated():
@@ -145,6 +157,35 @@ def test_owner_command_with_lid_is_resolved_before_pausing(tmp_path, monkeypatch
         assert response.status_code == 200
         assert response.json()["manual_control"] == "paused"
         assert repo.session(phone)["human_paused"] is True
+
+
+def test_new_customer_lid_is_resolved_before_enqueue(tmp_path, monkeypatch):
+    phone = "51999999999"
+    settings = Settings(
+        mode="live", provider="wasender", database_path=str(tmp_path / "db"),
+        wasender_webhook_secret="hook", wasender_account_phone="51900000001",
+        admin_token="test-admin", test_contacts_only=False, debounce_seconds=1000,
+    )
+    repo = Repository(settings.database_path)
+    transport = WaSender(settings)
+
+    async def fake_resolve(lid):
+        assert lid == "123456@lid"
+        return phone
+
+    monkeypatch.setattr(transport, "resolve_lid", fake_resolve)
+    service = BotService(settings, repo, Engine(settings, DemoCatalog(), DemoCommerce(), RuleAssistant()), transport)
+    event = payload(phone)
+    event["data"]["messages"]["key"].update(
+        remoteJid="123456@lid", cleanedSenderPn="", senderPn="",
+    )
+    event["data"]["messages"]["messageBody"] = None
+    with TestClient(create_app(settings, service)) as client:
+        response = client.post("/webhook/wasender", json=event,
+                               headers={"X-Webhook-Signature": "hook"})
+        assert response.status_code == 200
+        assert response.json()["duplicate"] is False
+        assert repo.stats()["inbox"] == {"pending": 1}
 
 
 def test_wasender_resolves_lid_with_session_token():
